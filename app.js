@@ -39,7 +39,7 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
   Meteor.methods({
     uploadFile: function (file) {
-      console.log(file);
+      file.save('/Users/cmather/tmp/uploads', {});
     }
   });
 }

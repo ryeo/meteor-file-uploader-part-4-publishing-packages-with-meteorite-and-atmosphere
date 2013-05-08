@@ -4,7 +4,7 @@ MeteorFile = function (options) {
   this.name = options.name;
   this.type = options.type;
   this.size = options.size;
-  this.source = options.source;
+  this.data = options.data;
 };
 
 MeteorFile.fromJSONValue = function (value) {
@@ -12,7 +12,7 @@ MeteorFile.fromJSONValue = function (value) {
     name: value.name,
     type: value.type,
     size: value.size,
-    source: EJSON.fromJSONValue(value.source)
+    data: EJSON.fromJSONValue(value.data)
   });
 };
 
@@ -35,7 +35,7 @@ MeteorFile.prototype = {
       name: this.name,
       type: this.type,
       size: this.size,
-      source: this.source
+      data: this.data
     });
   },
 
@@ -44,7 +44,7 @@ MeteorFile.prototype = {
       name: this.name,
       type: this.type,
       size: this.size,
-      source: EJSON.toJSONValue(this.source)
+      data: EJSON.toJSONValue(this.data)
     };
   }
 };
@@ -57,13 +57,15 @@ if (Meteor.isClient) {
   _.extend(MeteorFile.prototype, {
     read: function (file, callback) {
       var reader = new FileReader;
-      var meteorFile = this;
+      var self = this;
 
       callback = callback || function () {};
 
+      self.size = file.size;
+
       reader.onload = function () {
-        meteorFile.source = new Uint8Array(reader.result);
-        callback(null, meteorFile);
+        self.data = new Uint8Array(reader.result);
+        callback(null, self);
       };
 
       reader.onerror = function () {
@@ -77,6 +79,21 @@ if (Meteor.isClient) {
   _.extend(MeteorFile, {
     read: function (file, callback) {
       return new MeteorFile(file).read(file, callback);
+    }
+  });
+}
+/*****************************************************************************/
+
+/************************ Server *********************************************/
+if (Meteor.isServer) {
+  var fs = Npm.require('fs');
+  var path = Npm.require('path');
+
+  _.extend(MeteorFile.prototype, {
+    save: function (dirPath, options) {
+      var filepath = path.join(dirPath, this.name);
+      var buffer = new Buffer(this.data);
+      fs.writeFileSync(filepath, buffer, options);
     }
   });
 }
